@@ -3,6 +3,7 @@
 var adapters = ['http', 'local'];
 
 adapters.forEach(function (adapter) {
+
   describe('test.basics.js-' + adapter, function () {
 
     var dbs = {};
@@ -31,11 +32,22 @@ adapters.forEach(function (adapter) {
       db.should.be.an.instanceof(PouchDB);
     });
 
-    it('Create a pouch with a promise', function (done) {
-      new PouchDB(dbs.name).then(function (db) {
-        db.should.be.an.instanceof(PouchDB);
-        done();
-      }, done);
+    it('Create a pouch with a promise', function () {
+      return new PouchDB(dbs.name);
+    });
+
+    it('4314 Create a pouch with + in name', function () {
+      var db = new PouchDB(dbs.name + '+suffix');
+      return db.info().then(function () {
+        return db.destroy();
+      });
+    });
+
+    it('4314 Create a pouch with urlencoded name', function () {
+      var db = new PouchDB(dbs.name + 'some%2Ftest');
+      return db.info().then(function () {
+        return db.destroy();
+      });
     });
 
     it('Catch an error when creating a pouch with a promise', function (done) {
@@ -61,6 +73,22 @@ adapters.forEach(function (adapter) {
       return new PouchDB(dbs.name).destroy({});
     });
 
+    it('4339 throw useful error if method called on stale instance', function () {
+      var db = new PouchDB(dbs.name);
+
+      return db.put({
+        _id: 'cleanTest'
+      }).then(function () {
+        return db.destroy();
+      }).then(function () {
+        return db.get('cleanTest');
+      }).then(function () {
+        throw new Error('.get should return an error');
+      }, function (err) {
+        should.equal(err instanceof Error, true, 'should be an error');
+      });
+    });
+
     it('destroy a pouch, with a promise', function (done) {
       new PouchDB(dbs.name, function (err, db) {
         should.exist(db);
@@ -72,24 +100,46 @@ adapters.forEach(function (adapter) {
       });
     });
 
+    it('[4595] should reject xhr errors', function(done){
+      var invalidUrl = 'http:///';
+      new PouchDB(dbs.name).replicate.to(invalidUrl, {}).catch(function() {
+        done();
+      });
+
+    });
+    it('[4595] should emit error event on xhr error', function(done){
+      var invalidUrl = 'http:///';
+      new PouchDB(dbs.name).replicate.to(invalidUrl,{})
+        .on('error', function () { done(); });
+    });
+
     it('Add a doc', function (done) {
       var db = new PouchDB(dbs.name);
-      db.post({test: 'somestuff'}, function (err, info) {
+      db.post({test: 'somestuff'}, function (err) {
         should.not.exist(err);
         done();
       });
     });
 
+    it('Get invalid id', function () {
+      var db = new PouchDB(dbs.name);
+      return db.get(1234).then(function() {
+        throw 'show not be here';
+      }).catch(function(err) {
+        should.exist(err);
+      });
+    });
+
     it('Add a doc with a promise', function (done) {
       var db = new PouchDB(dbs.name);
-      db.post({test: 'somestuff'}).then(function (info) {
+      db.post({test: 'somestuff'}).then(function () {
         done();
       }, done);
     });
 
     it('Add a doc with opts object', function (done) {
       var db = new PouchDB(dbs.name);
-      db.post({test: 'somestuff'}, {}, function (err, info) {
+      db.post({test: 'somestuff'}, {}, function (err) {
         should.not.exist(err);
         done();
       });
@@ -184,7 +234,7 @@ adapters.forEach(function (adapter) {
 
     it('Read db id after closing Close', function (done) {
       new PouchDB(dbs.name, function (err, db) {
-        db.close(function (error) {
+        db.close(function () {
           db = new PouchDB(dbs.name);
           db.id(function (err, id) {
             id.should.be.a('string');
@@ -202,7 +252,7 @@ adapters.forEach(function (adapter) {
           _rev: info.rev + 'broken',
           another: 'test'
         };
-        db.put(nDoc, function (err, info2) {
+        db.put(nDoc, function (err) {
           should.exist(err);
           done();
         });
@@ -216,7 +266,7 @@ adapters.forEach(function (adapter) {
           test: 'somestuff',
           _id: info.id,
           _rev: info.rev
-        }, function (doc) {
+        }, function () {
           db.get(info.id, function (err) {
             should.exist(err.error);
             done();
@@ -233,7 +283,7 @@ adapters.forEach(function (adapter) {
           _id: info.id,
           _rev: info.rev
         }).then(function () {
-          return db.get(info.id).then(function (doc) {
+          return db.get(info.id).then(function () {
             done(true);
           }, function (err) {
             should.exist(err.error);
@@ -264,7 +314,7 @@ adapters.forEach(function (adapter) {
         return db.remove(info.id, info.rev);
       }).then(function () {
         return db.get(id);
-      }).then(function (doc) {
+      }).then(function () {
         done(true);
       }, function (err) {
         should.exist(err.error);
@@ -274,7 +324,7 @@ adapters.forEach(function (adapter) {
 
     it('Doc removal leaves only stub', function (done) {
       var db = new PouchDB(dbs.name);
-      db.put({_id: 'foo', value: 'test'}, function (err, res) {
+      db.put({_id: 'foo', value: 'test'}, function () {
         db.get('foo', function (err, doc) {
           db.remove(doc, function (err, res) {
             db.get('foo', { rev: res.rev }, function (err, doc) {
@@ -471,7 +521,7 @@ adapters.forEach(function (adapter) {
           _id: info.id,
           _rev: 'undefined',
           another: 'test'
-        }, function (err, info2) {
+        }, function (err) {
           should.exist(err);
           err.status.should.equal(PouchDB.Errors.INVALID_REV.status);
           err.message.should.equal(PouchDB.Errors.INVALID_REV.message,
@@ -490,7 +540,7 @@ adapters.forEach(function (adapter) {
         {'_bing': {'wha?': 'soda can'}}
       ];
       var db = new PouchDB(dbs.name);
-      db.bulkDocs({ docs: bad_docs }, function (err, res) {
+      db.bulkDocs({ docs: bad_docs }, function (err) {
         err.status.should.equal(PouchDB.Errors.DOC_VALIDATION.status);
         err.message.should.equal(PouchDB.Errors.DOC_VALIDATION.message +
                                  ': _zing',
@@ -535,7 +585,7 @@ adapters.forEach(function (adapter) {
 
       var db = new PouchDB(dbs.name);
 
-      var bulkCallback = function (err, res) {
+      var bulkCallback = function (err) {
         should.not.exist(err);
         if (++complete === TO_SEND) {
           done();
@@ -557,17 +607,16 @@ adapters.forEach(function (adapter) {
       db.post({
         '_id': 123,
         test: 'somestuff'
-      }, function (err, info) {
+      }, function (err) {
         should.exist(err);
-        err.message.should.equal(PouchDB.Errors.INVALID_ID.message,
-                                 'correct error message returned');
+        err.error.should.equal(PouchDB.Errors.INVALID_ID.error);
         done();
       });
     });
 
     it('Put doc without _id should fail', function (done) {
       var db = new PouchDB(dbs.name);
-      db.put({test: 'somestuff' }, function (err, info) {
+      db.put({test: 'somestuff' }, function (err) {
         should.exist(err);
         err.message.should.equal(PouchDB.Errors.MISSING_ID.message,
                                  'correct error message returned');
@@ -580,7 +629,7 @@ adapters.forEach(function (adapter) {
       db.put({
         _id: '_i_test',
         test: 'somestuff'
-      }, function (err, info) {
+      }, function (err) {
         should.exist(err);
         err.status.should.equal(PouchDB.Errors.RESERVED_ID.status);
         err.message.should.equal(PouchDB.Errors.RESERVED_ID.message,
@@ -591,7 +640,7 @@ adapters.forEach(function (adapter) {
 
     it('update_seq persists', function (done) {
       var db = new PouchDB(dbs.name);
-      db.post({ test: 'somestuff' }, function (err, info) {
+      db.post({ test: 'somestuff' }, function () {
         new PouchDB(dbs.name, function (err, db) {
           db.info(function (err, info) {
             info.update_seq.should.not.equal(0);
@@ -612,7 +661,7 @@ adapters.forEach(function (adapter) {
           db.remove({
             _id: info.id,
             _rev: info.rev
-          }, function (doc) {
+          }, function () {
             cb();
           });
         });
@@ -662,12 +711,19 @@ adapters.forEach(function (adapter) {
       });
     });
 
+    it('Create a db with a reserved name', function () {
+      var db = new PouchDB('__proto__');
+      return db.info().then(function () {
+        return db.destroy();
+      });
+    });
+
     it('Error when document is not an object', function (done) {
       var db = new PouchDB(dbs.name);
       var doc1 = [{ _id: 'foo' }, { _id: 'bar' }];
       var doc2 = 'this is not an object';
       var count = 5;
-      var callback = function (err, resp) {
+      var callback = function (err) {
         should.exist(err);
         count--;
         if (count === 0) {
@@ -697,8 +753,8 @@ adapters.forEach(function (adapter) {
     });
 
     it('Error works', function () {
-      var newError = PouchDB.Errors
-        .error(PouchDB.Errors.BAD_REQUEST, 'love needs no message');
+      var newError = PouchDB.utils
+        .createError(PouchDB.Errors.BAD_REQUEST, 'love needs no message');
       newError.status.should.equal(PouchDB.Errors.BAD_REQUEST.status);
       newError.name.should.equal(PouchDB.Errors.BAD_REQUEST.name);
       newError.message.should.equal(PouchDB.Errors.BAD_REQUEST.message,
@@ -718,7 +774,7 @@ adapters.forEach(function (adapter) {
               db.destroy(function (err) {
                 should.not.exist(err);
                 db2 = new PouchDB(dbs.name);
-                db2.get(doc._id, function (err, doc) {
+                db2.get(doc._id, function (err) {
                   err.status.should.equal(404);
                   done();
                 });
@@ -764,7 +820,7 @@ adapters.forEach(function (adapter) {
       var num = docs.length;
       var db = new PouchDB(dbs.name);
       docs.forEach(function (doc) {
-        db.put(doc, function (err, info) {
+        db.put(doc, function (err) {
           should.exist(err);
           if (!--num) {
             done();
@@ -885,7 +941,7 @@ adapters.forEach(function (adapter) {
       };
       PouchDB.plugin(plugin);
       db.initPull();
-      return db.put({foo: 'bar'}, 'anid').then(function (resp) {
+      return db.put({foo: 'bar'}, 'anid').then(function () {
         called.should.be.above(0, 'put was called');
         return db.get('anid');
       }).then(function (doc) {
@@ -904,7 +960,7 @@ adapters.forEach(function (adapter) {
         return db.remove('foo', rev);
       }).then(function () {
         return db.get('foo');
-      }).catch(function (err) {
+      }).catch(function () {
         return db.put({_id: 'foo', _rev: rev});
       }).then(function () {
         done(new Error('should never have got here'));
@@ -1003,6 +1059,16 @@ adapters.forEach(function (adapter) {
       });
     });
 
+    it('db.type() returns a type', function () {
+      var db = new PouchDB(dbs.name);
+      db.type().should.be.a('string');
+    });
+
+    it('#4788 db.type() is synchronous', function () {
+      new PouchDB(dbs.name).type.should.be.a('function');
+      new PouchDB(dbs.name).type.should.be.a('function');
+    });
+
     it('replace PouchDB.destroy() (express-pouchdb#203)', function (done) {
       var old = PouchDB.destroy;
       PouchDB.destroy = function (name, callback) {
@@ -1037,11 +1103,31 @@ adapters.forEach(function (adapter) {
         return db.get(doc._id);
       }).then(function (savedDoc) {
         // We shouldnt need to delete from doc here (#4273)
-        delete doc._rev;
-        delete doc._rev_tree;
+        should.not.exist(doc._rev);
+        should.not.exist(doc._rev_tree);
 
         delete savedDoc._rev;
         savedDoc.should.deep.equal(doc);
+      });
+    });
+
+    it('4712 invalid rev for new doc generates conflict', function () {
+      // CouchDB 1.X has a bug which allows this insertion via bulk_docs
+      // (which PouchDB uses for all document insertions)
+      if (adapter === 'http' && !testUtils.isCouchMaster()) {
+        return;
+      }
+
+      var db = new PouchDB(dbs.name);
+      var newdoc = {
+        '_id': 'foobar',
+        '_rev': '1-123'
+      };
+
+      return db.put(newdoc).then(function () {
+        throw new Error('expected an error');
+      }, function (err) {
+        err.should.have.property('status', 409);
       });
     });
 

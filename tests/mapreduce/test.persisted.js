@@ -100,7 +100,7 @@ function tests(suiteName, dbName, dbType) {
       }).then(function () {
         var views = ['name', 'title'];
         return PouchDB.utils.Promise.all(views.map(function (view) {
-          return db.query(view).then(function (res) {
+          return db.query(view).then(function () {
             throw new Error('expected an error');
           }, function (err) {
             should.exist(err);
@@ -249,7 +249,7 @@ function tests(suiteName, dbName, dbType) {
     });
 
     it('many simultaneous persisted views', function () {
-      this.timeout(90000);
+      this.timeout(120000);
       var db = new PouchDB(dbName);
 
       var views = [];
@@ -302,7 +302,6 @@ function tests(suiteName, dbName, dbType) {
     });
 
     it('should query correctly when stale', function () {
-      this.timeout(20000);
       return new PouchDB(dbName).then(function (db) {
         return createView(db, {
           map : function (doc) {
@@ -367,7 +366,6 @@ function tests(suiteName, dbName, dbType) {
     });
 
     it('should query correctly with stale update_after', function () {
-      this.timeout(20000);
       var pouch = new PouchDB(dbName);
 
       return createView(pouch, {map: function (doc) {
@@ -408,13 +406,13 @@ function tests(suiteName, dbName, dbType) {
       }
       return new PouchDB(dbName).then(function (db) {
         return db.bulkDocs({docs : docs}).then(function (responses) {
-          var tasks = [];
+          var promise = Promise.resolve();
           for (var i = 0; i < docs.length; i++) {
             /* jshint loopfunc:true */
             docs[i]._rev = responses[i].rev;
-            tasks.push(db.query('view' + i + '/view'));
+            promise = promise.then(db.query('view' + i + '/view'));
           }
-          return Promise.all(tasks);
+          return promise;
         }).then(function () {
           docs.forEach(function (doc) {
             doc._deleted = true;

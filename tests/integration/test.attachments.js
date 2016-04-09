@@ -164,7 +164,7 @@ adapters.forEach(function (adapter) {
             "content_type": "text/plain",
             "digest": "md5-aEI7pOYCRBLTRQvvqYrrJQ==",
             "stub": true
-          },
+          }
         }
       };
       var db = new PouchDB(dbs.name);
@@ -1435,7 +1435,7 @@ adapters.forEach(function (adapter) {
           var doc = change.doc;
           return !!doc._attachments;
         });
-        attachments.should.deep.equal(icons.map(function (icon, i) {
+        attachments.should.deep.equal(icons.map(function () {
           return false;
         }), 'when attachments=true');
         return db.changes({include_docs: true});
@@ -1446,7 +1446,7 @@ adapters.forEach(function (adapter) {
           var doc = change.doc;
           return !!doc._attachments;
         });
-        attachments.should.deep.equal(icons.map(function (icon, i) {
+        attachments.should.deep.equal(icons.map(function () {
           return false;
         }), 'when attachments=false');
         return db.changes({attachments: true});
@@ -1503,7 +1503,7 @@ adapters.forEach(function (adapter) {
           var doc = change.doc;
           return !!doc._attachments;
         });
-        attachments.should.deep.equal(icons.map(function (icon, i) {
+        attachments.should.deep.equal(icons.map(function () {
           return false;
         }), 'when attachments=true');
         return liveChangesPromise({include_docs: true});
@@ -1514,7 +1514,7 @@ adapters.forEach(function (adapter) {
           var doc = change.doc;
           return !!doc._attachments;
         });
-        attachments.should.deep.equal(icons.map(function (icon, i) {
+        attachments.should.deep.equal(icons.map(function () {
           return false;
         }), 'when attachments=false');
         return liveChangesPromise({attachments: true});
@@ -1898,7 +1898,7 @@ adapters.forEach(function (adapter) {
 
     it('Test some attachments', function (done) {
       var db = new PouchDB(dbs.name);
-      db.put(binAttDoc, function (err, write) {
+      db.put(binAttDoc, function (err) {
         should.not.exist(err, 'saved doc with attachment');
         db.get('bin_doc', function (err, doc) {
           should.exist(doc._attachments, 'doc has attachments field');
@@ -1930,13 +1930,13 @@ adapters.forEach(function (adapter) {
         db.putAttachment('bin_doc2', 'foo2.txt', rev, blob, 'text/plain',
                          function (err, info) {
           info.ok.should.equal(true);
-          db.getAttachment('bin_doc2', 'foo2.txt', function (err, res, xhr) {
+          db.getAttachment('bin_doc2', 'foo2.txt', function (err, res) {
             should.not.exist(err);
             res.type.should.equal('text/plain');
             testUtils.readBlob(res, function (data) {
               should.exist(data);
               db.get('bin_doc2', { attachments: true },
-                function (err, res, xhr) {
+                function (err, res) {
                 should.not.exist(err);
                 should.exist(res._attachments, 'Result has attachments field');
                 should.not
@@ -1956,7 +1956,7 @@ adapters.forEach(function (adapter) {
 
     it('Test getAttachment', function (done) {
       var db = new PouchDB(dbs.name);
-      db.put(binAttDoc, function (err, res) {
+      db.put(binAttDoc, function (err) {
         should.not.exist(err);
         db.getAttachment('bin_doc', 'foo.txt', function (err, res) {
           if (err) {
@@ -1981,7 +1981,7 @@ adapters.forEach(function (adapter) {
             data: testUtils.btoa('1\u00002\u00013\u0002')
           }
         }
-      }).then(function (res) {
+      }).then(function () {
         return db.get('doc');
       }).then(function (doc) {
         doc._attachments['2'] = {
@@ -2015,7 +2015,7 @@ adapters.forEach(function (adapter) {
             data: testUtils.btoa('1\u00002\u00013\u0002')
           }
         }
-      }).then(function (res) {
+      }).then(function () {
         return db.get('doc');
       }).then(function (doc) {
         doc._attachments['2'] = {
@@ -2078,7 +2078,7 @@ adapters.forEach(function (adapter) {
       function sort(a, b) {
         return a.id.localeCompare(b.id);
       }
-      db.bulkDocs({ docs: docs }, function (err, res) {
+      db.bulkDocs({ docs: docs }, function () {
         db.allDocs({ include_docs: true }, function (err, res) {
           for (var i = 0; i < docs.length; i++) {
             var attachmentsNb = typeof docs[i]._attachments !== 'undefined' ?
@@ -2142,18 +2142,17 @@ adapters.forEach(function (adapter) {
       });
     });
 
-    it('Test putAttachment with incorrect base64', function () {
+    it('Test putAttachment with invalid base64', function () {
       var db = new PouchDB(dbs.name);
-      return db.putAttachment('doc', 'att', null, '\u65e5\u672c\u8a9e', 'text/plain').then(function () {
-        throw new Error('shouldnt have gotten here');
-      }, function (err) {
-        should.exist(err);
-      });
+      return db.putAttachment('doc', 'att', null, '\u65e5\u672c\u8a9e', 'text/plain')
+        .should.be.rejected.then(function (err) {
+          err.should.have.property("message", "Some query argument is invalid");
+        });
     });
 
     it('Test getAttachment with empty text', function (done) {
       var db = new PouchDB(dbs.name);
-      db.put(binAttDoc2, function (err, res) {
+      db.put(binAttDoc2, function (err) {
         if (err) { return done(err); }
         db.getAttachment('bin_doc2', 'foo.txt', function (err, res) {
           if (err) { return done(err); }
@@ -2182,7 +2181,7 @@ adapters.forEach(function (adapter) {
 
     it('Test getAttachment with normal text', function (done) {
       var db = new PouchDB(dbs.name);
-      db.put(binAttDoc, function (err, res) {
+      db.put(binAttDoc, function (err) {
         if (err) { return done(err); }
         db.getAttachment('bin_doc', 'foo.txt', function (err, res) {
           if (err) { return done(err); }
@@ -2199,7 +2198,7 @@ adapters.forEach(function (adapter) {
 
     it('Test getAttachment with PNG', function (done) {
       var db = new PouchDB(dbs.name);
-      db.put(pngAttDoc, function (err, res) {
+      db.put(pngAttDoc, function (err) {
         if (err) { return done(err); }
         db.getAttachment('png_doc', 'foo.png', function (err, res) {
           if (err) { return done(err); }
@@ -2216,7 +2215,7 @@ adapters.forEach(function (adapter) {
 
     it('Test getAttachment with PNG using bulkDocs', function (done) {
       var db = new PouchDB(dbs.name);
-      db.bulkDocs([pngAttDoc], function (err, res) {
+      db.bulkDocs([pngAttDoc], function (err) {
         if (err) { return done(err); }
         db.getAttachment('png_doc', 'foo.png', function (err, res) {
           if (err) { return done(err); }
@@ -2231,7 +2230,7 @@ adapters.forEach(function (adapter) {
 
     it('Test getAttachment with PNG using post', function (done) {
       var db = new PouchDB(dbs.name);
-      db.post(pngAttDoc, function (err, res) {
+      db.post(pngAttDoc, function (err) {
         if (err) { return done(err); }
         db.getAttachment('png_doc', 'foo.png', function (err, res) {
           if (err) { return done(err); }
@@ -2246,13 +2245,13 @@ adapters.forEach(function (adapter) {
 
     it('Test postAttachment with PNG then bulkDocs', function (done) {
       var db = new PouchDB(dbs.name);
-      db.put({ _id: 'foo' }, function (err, res) {
+      db.put({ _id: 'foo' }, function () {
         db.get('foo', function (err, doc) {
           var data = pngAttDoc._attachments['foo.png'].data;
           var blob = testUtils.binaryStringToBlob(testUtils.atob(data),
             'image/png');
           db.putAttachment('foo', 'foo.png', doc._rev, blob, 'image/png',
-              function (err, info) {
+              function (err) {
             should.not.exist(err, 'attachment inserted');
             db.bulkDocs([{}], function (err) {
               should.not.exist(err, 'doc inserted');
@@ -2304,7 +2303,7 @@ adapters.forEach(function (adapter) {
           invalidDoc,
           binAttDoc
         ]
-      }, function (err, info) {
+      }, function (err) {
         should.exist(err, 'bad request');
         done();
       });
@@ -2355,7 +2354,7 @@ adapters.forEach(function (adapter) {
           var changes = db.changes({
             since: info.update_seq,
             live: true,
-            include_docs: true,
+            include_docs: true
           }).on('complete', function (result) {
             result.status.should.equal('cancelled');
             done();
@@ -2464,7 +2463,7 @@ adapters.forEach(function (adapter) {
         should.not.exist(err, 'Doc has been saved');
         doc._rev = resp.rev;
         doc.foo = 'bar';
-        db.put(doc, function (err, resp) {
+        db.put(doc, function (err) {
           should.not.exist(err, 'Doc has been updated');
           var blob = testUtils.makeBlob('bar');
           db.putAttachment('adoc', 'foo.txt', doc._rev, blob, 'text/plain',
@@ -2498,7 +2497,7 @@ adapters.forEach(function (adapter) {
       db.put({
         _id: 'foo',
         _attachments: {}
-      }, function (err, resp) {
+      }, function () {
         db.get('foo', { attachments: true }, function (err, res) {
           res._id.should.equal('foo');
           done();
@@ -2524,9 +2523,9 @@ adapters.forEach(function (adapter) {
         var rev = res.rev;
         db.get('mydoc', { attachments: true }, function (err, res) {
           res._attachments.should.include.keys('mytext1', 'mytext2');
-          db.removeAttachment('mydoc', 'mytext1', 0, function (err, res) {
+          db.removeAttachment('mydoc', 'mytext1', 0, function (err) {
             should.exist(err, 'removal should fail due to broken rev');
-            db.removeAttachment('mydoc', 'mytext1', rev, function (err, res) {
+            db.removeAttachment('mydoc', 'mytext1', rev, function () {
               db.get('mydoc', { attachments: true }, function (err, res) {
                 res._attachments.should.not.include.keys('mytext1');
                 res._attachments.should.include.keys('mytext2');
@@ -2555,7 +2554,7 @@ adapters.forEach(function (adapter) {
           db.getAttachment(results.id, 'foo.json', function (err, attachment) {
             should.not.exist(err);
             attachment.type.should.equal('application/json');
-            testUtils.readBlob(attachment, function (data) {
+            testUtils.readBlob(attachment, function () {
               jsonDoc._attachments['foo.json'].data.should
                 .equal('eyJIZWxsbyI6IndvcmxkIn0=', 'correct data');
               done();
@@ -2572,7 +2571,7 @@ adapters.forEach(function (adapter) {
         db.putAttachment('mydoc', 'mytext', resp.rev, blob, 'text/plain',
                          function (err, res) {
           db.get('mydoc', { attachments: false }, function (err, doc) {
-            db.remove(doc, function (err, resp) {
+            db.remove(doc, function () {
               should.exist(res.ok);
               done();
             });
@@ -2600,7 +2599,7 @@ adapters.forEach(function (adapter) {
 
     it('Try to get attachment of unexistent doc', function (done) {
       var db = new PouchDB(dbs.name);
-      db.getAttachment('unexistent', 'attachment', function (err, res) {
+      db.getAttachment('unexistent', 'attachment', function (err) {
         should.exist(err, 'Correctly returned error');
         done();
       });
@@ -2608,7 +2607,7 @@ adapters.forEach(function (adapter) {
 
     it('Test synchronous getAttachment', function (done) {
       var db = new PouchDB(dbs.name);
-      db.getAttachment('unexistent', 'attachment', function (err, res) {
+      db.getAttachment('unexistent', 'attachment', function (err) {
         should.exist(err, 'Correctly returned error');
         done();
       });
@@ -2828,7 +2827,7 @@ adapters.forEach(function (adapter) {
 
     it('Test stubs', function (done) {
       var db = new PouchDB(dbs.name);
-      db.putAttachment('a', 'foo2.txt', '', '', 'text/plain', function (err) {
+      db.putAttachment('a', 'foo2.txt', '', '', 'text/plain', function () {
         db.allDocs({ include_docs: true }, function (err, docs) {
           should.not.exist(docs.rows[0].stub, 'no stub');
           done();
@@ -2838,9 +2837,9 @@ adapters.forEach(function (adapter) {
 
     it('Try to get unexistent attachment of some doc', function (done) {
       var db = new PouchDB(dbs.name);
-      db.put({ _id: 'foo' }, function (err, res) {
+      db.put({ _id: 'foo' }, function (err) {
         should.not.exist(err, 'doc inserted');
-        db.getAttachment('foo', 'unexistentAttachment', function (err, res) {
+        db.getAttachment('foo', 'unexistentAttachment', function (err) {
           should.exist(err, 'Correctly returned error');
           done();
         });
@@ -2849,13 +2848,13 @@ adapters.forEach(function (adapter) {
 
     it('putAttachment and getAttachment with plaintext', function (done) {
       var db = new PouchDB(dbs.name);
-      db.put({ _id: 'foo' }, function (err, res) {
+      db.put({ _id: 'foo' }, function () {
         db.get('foo', function (err, doc) {
           var data = binAttDoc._attachments['foo.txt'].data;
           var blob = testUtils.binaryStringToBlob(testUtils.atob(data),
             'text/plain');
           db.putAttachment('foo', 'foo.txt', doc._rev, blob, 'text/plain',
-                           function (err, info) {
+                           function (err) {
             should.not.exist(err, 'attachment inserted');
             db.getAttachment('foo', 'foo.txt', function (err, blob) {
               should.not.exist(err, 'attachment gotten');
@@ -2896,13 +2895,13 @@ adapters.forEach(function (adapter) {
 
     it('putAttachment and getAttachment with png data', function (done) {
       var db = new PouchDB(dbs.name);
-      db.put({ _id: 'foo' }, function (err, res) {
+      db.put({ _id: 'foo' }, function () {
         db.get('foo', function (err, doc) {
           var data = pngAttDoc._attachments['foo.png'].data;
           var blob = testUtils.binaryStringToBlob(testUtils.atob(data),
             'image/png');
           db.putAttachment('foo', 'foo.png', doc._rev, blob, 'image/png',
-                           function (err, info) {
+                           function (err) {
             should.not.exist(err, 'attachment inserted');
             db.getAttachment('foo', 'foo.png', function (err, blob) {
               should.not.exist(err, 'attachment gotten');
@@ -3024,9 +3023,8 @@ adapters.forEach(function (adapter) {
           }
         }
       };
-      var rev;
       return db.put(doc).then(function (res) {
-        rev = doc._rev = res.rev;
+        doc._rev = res.rev;
         doc._attachments['foo.txt'].data = 'dG90bw=='; // 'toto'
         return db.put(doc);
       });
@@ -3035,7 +3033,7 @@ adapters.forEach(function (adapter) {
     if (typeof process === 'undefined' || process.browser) {
       it('test stored URL content type of png data', function (done) {
         var db = new PouchDB(dbs.name);
-        db.put({ _id: 'foo' }, function (err, res) {
+        db.put({ _id: 'foo' }, function () {
           db.get('foo', function (err, doc) {
             var data = pngAttDoc._attachments['foo.png'].data;
             var blob = testUtils.binaryStringToBlob(
@@ -3074,7 +3072,7 @@ adapters.forEach(function (adapter) {
             }
             checkBlobType(blob, function () {
               db.putAttachment('foo', 'foo.png', doc._rev, blob, 'image/png',
-                function (err, info) {
+                function (err) {
                 should.not.exist(err, 'attachment inserted');
                 db.getAttachment('foo', 'foo.png', function (err, blob) {
                   should.not.exist(err, 'attachment gotten');
@@ -3122,7 +3120,7 @@ adapters.forEach(function (adapter) {
             script.src = 'deps/bigimage.js';
             document.body.appendChild(script);
             var timeout = setInterval(function () {
-              if (!!window.bigimage) {
+              if (window.bigimage) {
                 clearInterval(timeout);
                 cb(null, window.bigimage);
               }
@@ -3131,14 +3129,14 @@ adapters.forEach(function (adapter) {
         }
 
         var db = new PouchDB(dbs.name);
-        db.put({ _id: 'foo' }, function (err, res) {
+        db.put({ _id: 'foo' }, function () {
           db.get('foo', function (err, doc) {
 
             getData(function (err, data) {
               var blob = testUtils.binaryStringToBlob(
                   testUtils.atob(data), 'image/png');
               db.putAttachment('foo', 'foo.png', doc._rev, blob, 'image/png',
-                  function (err, info) {
+                  function (err) {
                 should.not.exist(err, 'attachment inserted');
                 db.getAttachment('foo', 'foo.png', function (err, blob) {
                   should.not.exist(err, 'attachment gotten');
@@ -3345,7 +3343,7 @@ repl_adapters.forEach(function (adapters) {
       var db = new PouchDB(dbs.name);
       var remote = new PouchDB(dbs.remote);
 
-      remote.bulkDocs({ docs: docs1 }, function (err, info) {
+      remote.bulkDocs({ docs: docs1 }, function () {
         db.replicate.from(remote, function () {
           db.get('bin_doc', { attachments: true }, function (err, doc) {
             binAttDoc._attachments['foo.txt'].data.should
@@ -3377,7 +3375,7 @@ repl_adapters.forEach(function (adapters) {
       var db = new PouchDB(dbs.name);
       var remote = new PouchDB(dbs.remote);
 
-      return remote.bulkDocs({ docs: docs1 }).then(function(info) {
+      return remote.bulkDocs({ docs: docs1 }).then(function() {
         return db.replicate.from(remote);
       }).then(function () {
         return db.get('bin_doc', {attachments: true, binary: true});
@@ -3396,7 +3394,6 @@ repl_adapters.forEach(function (adapters) {
 
       var db = new PouchDB(dbs.name);
       var remote = new PouchDB(dbs.remote);
-      var rev;
 
       var data = testUtils.btoa('foobar');
       var blob = testUtils.binaryStringToBlob(
@@ -3411,8 +3408,7 @@ repl_adapters.forEach(function (adapters) {
         };
         expectedKeys.push(i + '.txt');
       }
-      return db.put(doc).then(function (info) {
-        rev = info.rev;
+      return db.put(doc).then(function () {
         return db.replicate.to(remote);
       }).then(function () {
         return remote.get('foo', {attachments: true});
@@ -3429,7 +3425,6 @@ repl_adapters.forEach(function (adapters) {
 
       var db = new PouchDB(dbs.name);
       var remote = new PouchDB(dbs.remote);
-      var rev;
 
       var data = 'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAAMFBMVEX+9+' +
         'j+9OD+7tL95rr93qT80YD7x2L6vkn6syz5qRT4ogT4nwD4ngD4nQD4nQD4' +
@@ -3449,8 +3444,7 @@ repl_adapters.forEach(function (adapters) {
         };
         expectedKeys.push(i + '.txt');
       }
-      return db.put(doc).then(function (info) {
-        rev = info.rev;
+      return db.put(doc).then(function () {
         return db.replicate.to(remote);
       }).then(function () {
         return remote.get('foo', {attachments: true});
@@ -3505,9 +3499,7 @@ repl_adapters.forEach(function (adapters) {
           };
         }
 
-        var rev;
-        return db.put(doc).then(function (info) {
-          rev = info.rev;
+        return db.put(doc).then(function () {
           return db.replicate.to(remote);
         }).then(function () {
           return PouchDB.utils.Promise.all([
@@ -3554,7 +3546,7 @@ repl_adapters.forEach(function (adapters) {
           }
         });
       }
-      return remote.bulkDocs(docs).then(function (info) {
+      return remote.bulkDocs(docs).then(function () {
         return remote.replicate.to(db);
       }).then(function () {
         return db.allDocs();
@@ -3664,7 +3656,7 @@ repl_adapters.forEach(function (adapters) {
         return remote.replicate.to(db);
       }).then(function () {
         return db.get('test1', {attachments: true});
-      }).then(function (doc) {
+      }).then(function () {
         return remote.get('test1', {attachments: true});
       }).then(function (doc) {
         doc._attachments = {
@@ -3745,5 +3737,68 @@ repl_adapters.forEach(function (adapters) {
         should.exist(doc);
       });
     });
+
+    it('3955 race condition in put', function (done) {
+
+      var db = new PouchDB(dbs.name);
+      var btoa = testUtils.btoa;
+      var srcdata = ['', '', ''];
+
+      for (var i = 0; i < 50; i++) {
+        srcdata[0] += 'AAA';
+        srcdata[1] += 'BBB';
+        srcdata[2] += 'CCC';
+      }
+
+      var doc = {
+        _id: 'x',
+        type: 'testdoc',
+        _attachments:{
+          'a.txt': {
+            content_type: 'text/plain',
+            data:btoa(srcdata[0])
+          },
+          'b.txt': {
+            content_type: 'text/plain',
+            data:btoa(srcdata[1])
+          },
+          'c.txt': {
+            content_type: 'text/plain',
+            data:btoa(srcdata[2])
+          },
+          'zzz.txt': {
+            content_type: 'text/plain',
+            data:btoa('ZZZ')
+          }
+        }
+      };
+
+      db.put(doc).then(function () {
+        return db.get('x');
+      }).then(function(doc){
+        var digests = Object.keys(doc._attachments).map(function (a) {
+          return doc._attachments[a].digest;
+        });
+        if (isUnique(digests)) {
+          done();
+        } else {
+          done('digests are not unique');
+        }
+      });
+
+      doc._attachments['c.txt'].data = btoa('ZZZ');
+      doc._attachments['b.txt'].data = btoa('ZZZ');
+
+      function isUnique(arr) {
+        arr.sort();
+        for (var i = 1; i < arr.length; i++ ) {
+          if (arr[i-1] === arr[i]) {
+            return false;
+          }
+        }
+        return true;
+      }
+    });
+
   });
 });

@@ -1,7 +1,7 @@
 Running PouchDB Tests
 --------------------------------------
 
-The PouchDB test suite expects an instance of CouchDB running in [Admin Party](http://guide.couchdb.org/draft/security.html#party) on http://127.0.0.1:5984, you can configure this by sending the `COUCH_HOST` env var.
+The PouchDB test suite expects an instance of CouchDB (version 1.6.1 and above) running in [Admin Party](http://guide.couchdb.org/draft/security.html#party) on http://127.0.0.1:5984 with [CORS enabled](https://github.com/pouchdb/add-cors-to-couchdb), you can configure this by sending the `COUCH_HOST` env var.
 
  * PouchDB has been primarily developed on Linux and OSX, if you are using Windows then these instructions will have problems, we would love your help fixing them though.
 
@@ -25,6 +25,14 @@ or you can run:
 
 and open [http://127.0.0.1:8000/tests/integration/index.html](http://127.0.0.1:8000/tests/integration/index.html) in your browser of choice. The performance tests are located @ [http://localhost:8000/tests/performance/index.html](http://localhost:8000/tests/performance/index.html).
 
+### Unit tests
+
+    $ npm run build-as-modular-es5
+    $ npm run test-unit
+
+These are tests that confirm small parts of PouchDB functionality. In order to
+work correctly with ES6, they are first transpiled to `lib` as modular ES5 (`run run build-as-modular-es5`) using Babel, and then tested as CommonJS modules. See `build-as-modular-es5.sh` for details.
+
 ### Test Options
 
 #### Subset of tests:
@@ -35,7 +43,11 @@ or append `?grep=test.replication.js` if you opened the tests in a browser manua
 
 #### Test Coverage
 
+    $ npm run build-as-modular-es5
     $ COVERAGE=1 npm test
+
+Again, this uses `npm run build-as-modular-es5` in order to fully test the codebase
+as a non-bundle. See `build-as-modular-es5.sh` for details.
 
 #### Test alternative server
 
@@ -45,17 +57,11 @@ or
 
     $ COUCH_HOST=http://user:pass@myname.host.com npm test
 
-#### Test with ES5 shims
+#### Other test options
 
-Some older browsers require [es5 shims](https://github.com/es-shims/es5-shim). Enable them with:
-
-    $ ES5_SHIM=true npm run dev
-
-or e.g.:
-
-    $ ES5_SHIM=true CLIENT=selenium:phantomjs npm test
-
-or you can append it as `?es5shim=true` if you manually opened a browser window.
+* `SKIP_MIGRATION=1` should be used to skip the migration tests.
+* `POUCHDB_SRC=../../dist/pouchdb.js` can be used to treat another file as the PouchDB source file.
+* `npm run test-webpack` will build with Webpack and then test that in a browser.
 
 #### Run the map/reduce tests
 
@@ -72,15 +78,15 @@ You may need to install `ant` in order for the Android tests to run (e.g. `brew 
 Run the tests against an iOS simulator:
 
     $ CLIENT=ios npm run cordova
-    
-Run the tests against a connected Android device, using the given COUCH_HOST    
-    
+
+Run the tests against a connected Android device, using the given COUCH_HOST
+
     $ CLIENT=android DEVICE=true COUCH_HOST=http://example.com:5984
 
 Run the tests against the FirefoxOS simulator:
 
     $ CLIENT=firefoxos npm run cordova
-    
+
 Run the tests against a BlackBerry 10 device:
 
     $ CLIENT=blackberry10 DEVICE=true npm run cordova
@@ -89,10 +95,10 @@ Use a custom Couch host:
 
     $ COUCH_HOST=http://myurl:5984 npm run cordova
 
-Grep some tests:    
+Grep some tests:
 
     $ GREP=basics npm run cordova
-    
+
 Test against the [SQLite Plugin](https://github.com/brodysoft/Cordova-SQLitePlugin):
 
     $ SQLITE_PLUGIN=true ADAPTERS=websql npm run cordova
@@ -112,7 +118,7 @@ You can also debug with Weinre by doing:
 
     $ npm install -g weinre
     $ weinre --boundHost=0.0.0.0
-    
+
 Then run the tests with:
 
     $ WEINRE_HOST=http://route.to.my.weinre:8080 npm run cordova
@@ -152,12 +158,16 @@ Some Level adapters also require a standard database name prefix (e.g. `riak://`
 
     LEVEL_PREFIX=riak://localhost:8087/
 
+To run the node-websql test in Node, run the tests with:
+
+    ADAPTER=websql
+
 ### Performance tests
 
 To run the performance test suite in node.js:
 
     PERF=1 npm test
-    
+
 Or the automated browser runner:
 
     PERF=1 CLIENT=selenium:firefox npm test
@@ -178,7 +188,7 @@ You can specify a particular version of PouchDB or a particular adapter by doing
     http://localhost:8000/tests/performance/index.html?adapter=websql
     http://localhost:8000/tests/performance/index.html?adapter=idb&src=//site.com/pouchdb.js
 
-All of the browser plugin adapters (i.e. `memory`, and `localstorage`) are also available this way.
+All of the browser plugin adapters (i.e. `fruitdown`, `memory`, and `localstorage`) are also available this way.
 
 You can also specify particular tests by using `grep=`, e.g.:
 
@@ -196,8 +206,9 @@ Run `npm run dev`, then open it in Safari or iOS.
 Adapter plugins and adapter order
 --------------------------------------
 
-We are currently building two adapters-as-plugins: `memory` and `localstorage`.  All are based on the [LevelDOWN API](https://github.com/rvagg/abstract-leveldown):
+We are currently building three adapters-as-plugins: `fruitdown`, `memory` and `localstorage`.  All are based on the [LevelDOWN API](https://github.com/rvagg/abstract-leveldown):
 
+* `fruitdown`: based on [FruitDOWN](https://github.com/nolanlawson/fruitdown)
 * `memory`: based on [MemDOWN](https://github.com/rvagg/memdown)
 * `localstorage`: based on [localstorage-down](https://github.com/no9/localstorage-down)
 

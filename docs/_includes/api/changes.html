@@ -21,7 +21,8 @@ All options default to `false` unless otherwise specified.
 * `options.descending`: Reverse the order of the output documents.
 * `options.since`: Start the results from the change immediately after the given sequence number. You can also pass `'now'` if you want only new changes (when `live` is `true`).
 * `options.limit`: Limit the number of results to this number.
-* `options.timeout`: Request timeout (in milliseconds).
+* `options.timeout`: Request timeout (in milliseconds), use `false` to disable.
+* `options.heartbeat`: For http adapter only, time in milliseconds for server to give a heartbeat to keep long connections open. Defaults to 10000 (10 seconds), use `false` to disable the default.
 
 **Filtering Options:**
 
@@ -32,7 +33,7 @@ All options default to `false` unless otherwise specified.
 
 **Advanced Options:**
 
-* `options.returnDocs`: Is available for non-http databases and defaults to `true`. Passing `false` prevents the changes feed from keeping all the documents in memory &ndash; in other words complete always has an empty results array, and the `change` event is the only way to get the event. Useful for large change sets where otherwise you would run out of memory.
+* `options.return_docs` (previously `options.returnDocs`): Is available for non-http databases and defaults to `true`. Passing `false` prevents the changes feed from keeping all the documents in memory &ndash; in other words complete always has an empty results array, and the `change` event is the only way to get the event. Useful for large change sets where otherwise you would run out of memory.
 * `options.batch_size`: Only available for http databases, this configures how many changes to fetch at a time. Increasing this can reduce the number of requests made. Default is 25.
 * `options.style`: Specifies how many revisions are returned in the changes array. The default, `'main_only'`, will only return the current "winning" revision; `'all_docs'` will return all leaf revisions (including conflicts and deleted former conflicts). Most likely you won't need this unless you're writing a replicator.
 
@@ -154,6 +155,20 @@ db.changes({
 });
 {% endhighlight %}
 {% include code/end.html %}
+
+{% include code/start.html id="changes1" type="async" %}
+{% highlight js %}
+try {
+  var result = await db.changes({
+    limit: 10,
+    since: 0
+  });
+} catch (err) {
+  console.log(err);
+}
+{% endhighlight %}
+{% include code/end.html %}
+
 {% include code/start.html id="changes1" type="promise" %}
 {% highlight js %}
 db.changes({
@@ -202,7 +217,7 @@ db.changes({
 When `live` is `false`, the returned object is also an event emitter as well as a promise,
 and will fire the `'complete'` event when the results are ready.
 
-Note that this `'complete'` event only fires when you aren't doing live changes. With live changes, use the `'paused'` event instead.
+Note that this `'complete'` event only fires when you aren't doing live changes.
 
 #### Filtered changes
 

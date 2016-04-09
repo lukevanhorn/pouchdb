@@ -159,6 +159,7 @@ PouchDB also offers separate browser plugins that use backends other than Indexe
 
 * [pouchdb.memory.js](https://github.com/pouchdb/pouchdb/releases/download/{{ site.version }}/pouchdb.memory.js) (Minified: [pouchdb.memory.min.js](https://github.com/pouchdb/pouchdb/releases/download/{{ site.version }}/pouchdb.memory.min.js))
 * [pouchdb.localstorage.js](https://github.com/pouchdb/pouchdb/releases/download/{{ site.version }}/pouchdb.localstorage.js) (Minified: [pouchdb.localstorage.min.js](https://github.com/pouchdb/pouchdb/releases/download/{{ site.version }}/pouchdb.localstorage.min.js))
+* [pouchdb.fruitdown.js](https://github.com/pouchdb/pouchdb/releases/download/{{ site.version }}/pouchdb.fruitdown.js) (Minified: [pouchdb.fruitdown.min.js](https://github.com/pouchdb/pouchdb/releases/download/{{ site.version }}/pouchdb.fruitdown.min.js))
 
 {% include alert/start.html variant="warning"%}
 {% markdown %}
@@ -207,6 +208,19 @@ If you need to support very old browsers, such as IE &le; 9.0 and Opera Mini, yo
 The LocalStorage plugin should be considered highly experimental, and the underlying structure may change in the future.  Currently it stores all document IDs in memory, which works fine on small databases but may crash on larger databases.  You can follow <a href='https://github.com/No9/localstorage-down'>localstorage-down</a> to track our progress.
 {% include alert/end.html %}
 
+#### FruitDOWN adapter
+
+If you need to support IndexedDB in Apple browsers (which PouchDB normally does not support due to instability), then you can use FruitDOWN, which works over all IndexedDB implementations at the expense of using a much smaller part of the IndexedDB API and therefore being slower and less efficient.
+
+```html
+<script src="pouchdb.js"></script>
+<script src="pouchdb.fruitdown.js"></script>
+<script>
+  // this pouch is backed by FruitDOWN
+  var pouch = new PouchDB('mydb', {adapter: 'fruitdown'});
+</script>
+```
+
 {% include anchor.html title="PouchDB in Node.js" hash="pouchdb_in_node_js"%}
 
 In Node.js, the adapter situation is much simpler than in browsers.  By default, if you create a PouchDB like this one:
@@ -252,6 +266,23 @@ var pouch = new PouchDB('riak://localhost:8087/somebucket', {db: require('riakdo
 #### More LevelDOWN adapters
 
 There are many other LevelDOWN-based plugins &ndash; far too many to list here. You can find a [mostly-complete list on Github](https://github.com/rvagg/node-levelup/wiki/Modules#storage-back-ends) that includes implementations on top of MySQL, Windows Azure Table Storage, and SQLite.
+
+#### node-websql adapter
+
+In addition to the LevelDOWN-based adapters, you can also use PouchDB over
+[SQLite3](https://github.com/mapbox/node-sqlite3) in Node, using the WebSQL adapter and
+[node-websql](https://github.com/nolanlawson/node-websql):
+
+```js
+var PouchDB = require('pouchdb');
+require('pouchdb/extras/websql');
+
+var db = new PouchDB('mydatabase.db', {adapter: 'websql'});
+```
+
+This should be more efficient than something like [sqldown](https://github.com/calvinmetcalf/SQLdown), because
+instead of using a LevelDB-esque adapter over SQLite, PouchDB is directly using
+SQLite queries to build the database.
 
 
 {% include alert/start.html variant="warning"%}

@@ -16,7 +16,7 @@ var testTimeout = 30 * 60 * 1000;
 var username = process.env.SAUCE_USERNAME;
 var accessKey = process.env.SAUCE_ACCESS_KEY;
 
-var SELENIUM_VERSION = process.env.SELENIUM_VERSION || '2.46.0';
+var SELENIUM_VERSION = process.env.SELENIUM_VERSION || '2.45.0';
 
 // BAIL=0 to disable bailing
 var bail = process.env.BAIL !== '0';
@@ -61,9 +61,6 @@ if (process.env.GREP) {
 if (process.env.ADAPTERS) {
   qs.adapters = process.env.ADAPTERS;
 }
-if (process.env.ES5_SHIM || process.env.ES5_SHIMS) {
-  qs.es5shim = true;
-}
 if (process.env.AUTO_COMPACTION) {
   qs.autoCompaction = true;
 }
@@ -72,6 +69,12 @@ if (process.env.SERVER) {
 }
 if (process.env.SKIP_MIGRATION) {
   qs.SKIP_MIGRATION = process.env.SKIP_MIGRATION;
+}
+if (process.env.POUCHDB_SRC) {
+  qs.src = process.env.POUCHDB_SRC;
+}
+if (process.env.COUCH_HOST) {
+  qs.couchHost = process.env.COUCH_HOST;
 }
 
 testUrl += '?';
@@ -82,7 +85,6 @@ if (process.env.TRAVIS &&
     process.env.TRAVIS_SECURE_ENV_VARS === 'false') {
   console.error('Not running test, cannot connect to saucelabs');
   process.exit(0);
-  return;
 }
 
 function testError(e) {
@@ -108,7 +110,7 @@ function postResult(result) {
         method: 'POST',
         uri: process.env.DASHBOARD_HOST + '/performance_results',
         json: result
-      }, function (error, response, body) {
+      }, function (error) {
         console.log(result);
         process.exit(!!error);
       });
@@ -140,7 +142,7 @@ function startSelenium(callback) {
       console.error('Failed to install selenium');
       process.exit(1);
     }
-    selenium.start(opts, function(err, server) {
+    selenium.start(opts, function() {
       sauceClient = wd.promiseChainRemote();
       callback();
     });

@@ -13,8 +13,8 @@ describe('test.http.js', function () {
     testUtils.cleanup([dbs.name], done);
   });
 
-
-  it('Create a pouch without DB setup', function (done) {
+  // TODO: Remove `skipSetup` in favor of `skip_setup` in a future release
+  it('Create a pouch without DB setup (skipSetup)', function (done) {
     var instantDB;
     testUtils.isCouchDB(function (isCouchDB) {
       if (!isCouchDB) {
@@ -23,7 +23,26 @@ describe('test.http.js', function () {
       new PouchDB(dbs.name).then(function (db) {
         db.destroy(function () {
           instantDB = new PouchDB(dbs.name, { skipSetup: true });
-          instantDB.post({ test: 'abc' }, function (err, info) {
+          instantDB.post({ test: 'abc' }, function (err) {
+            should.exist(err);
+            err.name.should.equal('not_found', 'Skipped setup of database');
+            done();
+          });
+        });
+      });
+    });
+  });
+
+  it('Create a pouch without DB setup (skip_setup)', function (done) {
+    var instantDB;
+    testUtils.isCouchDB(function (isCouchDB) {
+      if (!isCouchDB) {
+        return done();
+      }
+      new PouchDB(dbs.name).then(function (db) {
+        db.destroy(function () {
+          instantDB = new PouchDB(dbs.name, { skip_setup: true });
+          instantDB.post({ test: 'abc' }, function (err) {
             should.exist(err);
             err.name.should.equal('not_found', 'Skipped setup of database');
             done();
@@ -43,7 +62,7 @@ describe('test.http.js', function () {
       });
     }
     var db = new PouchDB(dbs.name);
-    db.bulkDocs({ docs: docs }, function (err, result) {
+    db.bulkDocs({ docs: docs }, function () {
       db.info(function (err, info) {
         var update_seq = info.update_seq;
 
@@ -57,8 +76,8 @@ describe('test.http.js', function () {
         };
         db.changes({
           since: update_seq
-        }).on('change', function (change) {
-        }).on('complete', function (result) {
+        }).on('change', function () {
+        }).on('complete', function () {
           callCount.should.equal(1, 'One _changes call to complete changes');
           PouchDB.utils.ajax = ajax;
           done();
@@ -72,7 +91,7 @@ describe('test.http.js', function () {
       _id: '_design/foo/bar'
     };
     var db = new PouchDB(dbs.name);
-    db.bulkDocs({ docs: [ddoc] }, function (err, result) {
+    db.bulkDocs({ docs: [ddoc] }, function () {
       db.get(ddoc._id, function (err, doc) {
         should.not.exist(err);
         doc._id.should.equal(ddoc._id, 'Correct doc returned');
@@ -122,51 +141,13 @@ describe('test.http.js', function () {
 
     var changes = db.changes();
 
-    changes.on('complete', function(change) {
+    changes.on('complete', function() {
       should.exist(ajaxOpts);
       ajaxOpts.timeout.should.equal(timeout);
       PouchDB.utils.ajax = ajax;
       done();
     });
 
-  });
-
-  // we can't guarantee that every server will throw an error
-  // (e.g. minimum-for-pouchdb, pouchdb-express-router), so we are
-  // unfortunately skipping this test for now
-  it.skip('Test unauthorized user', function () {
-    var db = new PouchDB(dbs.name, {
-      auth: {
-        user: 'foo',
-        password: 'bar'
-      }
-    });
-    return db.info().then(function () {
-      // TODO: add testUtils.isMinimumForPouchDB()
-      if (testUtils.isExpressRouter()) {
-        return; // express-router doesn't do auth
-      }
-      throw new Error('expected an error');
-    }, function (err) {
-      should.exist(err); // 401 error
-    });
-  });
-
-  // we can't guarantee that every server will throw an error
-  // (e.g. minimum-for-pouchdb, pouchdb-express-router), so we are
-  // unfortunately skipping this test for now
-  it.skip('Test unauthorized user, user/pass in url itself', function () {
-    var dbname = dbs.name.replace(/\/\//, '//foo:bar@');
-    var db = new PouchDB(dbname);
-    return db.info().then(function () {
-      // TODO: add testUtils.isMinimumForPouchDB()
-      if (testUtils.isExpressRouter()) {
-        return; // express-router doesn't do auth
-      }
-      throw new Error('expected an error');
-    }, function (err) {
-      should.exist(err); // 401 error
-    });
   });
 
   it('Test custom header', function () {
@@ -203,6 +184,24 @@ describe('test.http.js', function () {
       });
     }).then(function (res) {
       res.rows.should.have.length(numDocs);
+    });
+  });
+
+  it('4358 db.info rejects when server is down', function() {
+    var db = new PouchDB('http://example.com/foo');
+    return db.info().then(function () {
+      throw new Error('expected an error');
+    }).catch(function(err) {
+      should.exist(err);
+    });
+  });
+
+  it('4358 db.destroy rejects when server is down', function() {
+    var db = new PouchDB('http://example.com/foo');
+    return db.destroy().then(function () {
+      throw new Error('expected an error');
+    }).catch(function(err) {
+      should.exist(err);
     });
   });
 
